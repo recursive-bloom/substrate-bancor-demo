@@ -131,8 +131,8 @@ pub mod pallet {
 			let base_balance = <BaseBalance<T>>::get().unwrap();
 			let real_supply = <RealSupply<T>>::get().unwrap();
 			let real_balance = <RealBalance<T>>::get().unwrap();
-			let virtual_supply = base_supply + real_supply;
-			let virtual_balance = base_balance + real_balance;
+			let virtual_supply = base_supply.saturating_add(real_supply);
+			let virtual_balance = base_balance.saturating_add(real_balance);
 
 			let vs = I64F64::from_num(virtual_supply);
 			let vb = I64F64::from_num(virtual_balance);
@@ -146,8 +146,8 @@ pub mod pallet {
 
 			let token = u128::from_fixed(token);
 
-			let real_supply = real_supply + token;
-			let real_balance = real_balance + saved_vstoken;
+			let real_supply = real_supply.saturating_add(token);
+			let real_balance = real_balance.saturating_add(saved_vstoken);
 
 			<TokenSheet<T>>::insert(who.clone(), token);
 			<RealBalance<T>>::put(real_balance);
@@ -168,8 +168,8 @@ pub mod pallet {
 			let base_balance = <BaseBalance<T>>::get().unwrap();
 			let real_supply = <RealSupply<T>>::get().unwrap();
 			let real_balance = <RealBalance<T>>::get().unwrap();
-			let virtual_supply = base_supply + real_supply;
-			let virtual_balance = base_balance + real_balance;
+			let virtual_supply = base_supply.saturating_add(real_supply);
+			let virtual_balance = base_balance.saturating_add(real_balance);
 
 			let vs = I64F64::from_num(virtual_supply);
 			let vb = I64F64::from_num(virtual_balance);
@@ -183,10 +183,10 @@ pub mod pallet {
 
 			let vstoken = u128::from_fixed(vstoken);
 
-			let real_supply = real_supply - saved_token;
-			let real_balance = real_balance - vstoken;
+			let real_supply = real_supply.saturating_sub(saved_token);
+			let real_balance = real_balance.saturating_sub(vstoken);
 
-			<TokenSheet<T>>::insert(who.clone(), <TokenSheet<T>>::get(who.clone()).unwrap() - saved_token);
+			<TokenSheet<T>>::insert(who.clone(), <TokenSheet<T>>::get(who.clone()).unwrap().saturating_sub(saved_token));
 			<RealBalance<T>>::put(real_balance);
 			<RealSupply<T>>::put(real_supply);
 
