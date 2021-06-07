@@ -50,20 +50,20 @@ pub mod pallet {
 	pub type Something<T> = StorageValue<_, u32>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn basesupply)]
-	pub type BaseSupply<T> = StorageValue<_, u128>;
+	#[pallet::getter(fn basesupplyoftoken)]
+	pub type BaseSupplyOfToken<T> = StorageValue<_, u128>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn basebalance)]
-	pub type BaseBalance<T> = StorageValue<_, u128>;
+	#[pallet::getter(fn basebalanceofvstoken)]
+	pub type BaseBalanceOfVSToken<T> = StorageValue<_, u128>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn realupply)]
-	pub type RealSupply<T> = StorageValue<_, u128>;
+	#[pallet::getter(fn realupplyoftoken)]
+	pub type RealSupplyOfToken<T> = StorageValue<_, u128>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn realbalance)]
-	pub type RealBalance<T> = StorageValue<_, u128>;
+	#[pallet::getter(fn realbalanceofvstoken)]
+	pub type RealBalanceOfVSToken<T> = StorageValue<_, u128>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn tokensheet)]
@@ -102,17 +102,18 @@ pub mod pallet {
 	impl<T:Config> Pallet<T> {
 
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn base_init(origin: OriginFor<T>, base_supply: u128, base_balance: u128) -> DispatchResultWithPostInfo {
+		pub fn base_init(origin: OriginFor<T>, base_balance: u128) -> DispatchResultWithPostInfo {
 			// https://substrate.dev/docs/en/knowledgebase/runtime/origin
 			let who = ensure_signed(origin)?;
-			match <BaseSupply<T>>::get() {
+			match <BaseSupplyOfToken<T>>::get() {
 				// Return an error if the value has not been set.
 				None => {
 					// Update storage.
-					<BaseSupply<T>>::put(base_supply);
-					<BaseBalance<T>>::put(base_balance);
-					<RealSupply<T>>::put(0);
-					<RealBalance<T>>::put(0);
+					let base_supply = base_balance.saturating_mul(2);
+					<BaseSupplyOfToken<T>>::put(base_supply);
+					<BaseBalanceOfVSToken<T>>::put(base_balance);
+					<RealSupplyOfToken<T>>::put(0);
+					<RealBalanceOfVSToken<T>>::put(0);
 
 					// Emit an event.
 					Self::deposit_event(Event::BancorInit(base_supply, base_balance, who.clone()));
@@ -127,10 +128,10 @@ pub mod pallet {
 		pub fn vstoken_buy_token(origin: OriginFor<T>, vstoken: u128) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let saved_vstoken = vstoken;
-			let base_supply = <BaseSupply<T>>::get().unwrap();
-			let base_balance = <BaseBalance<T>>::get().unwrap();
-			let real_supply = <RealSupply<T>>::get().unwrap();
-			let real_balance = <RealBalance<T>>::get().unwrap();
+			let base_supply = <BaseSupplyOfToken<T>>::get().unwrap();
+			let base_balance = <BaseBalanceOfVSToken<T>>::get().unwrap();
+			let real_supply = <RealSupplyOfToken<T>>::get().unwrap();
+			let real_balance = <RealBalanceOfVSToken<T>>::get().unwrap();
 			let virtual_supply = base_supply.saturating_add(real_supply);
 			let virtual_balance = base_balance.saturating_add(real_balance);
 
@@ -150,8 +151,8 @@ pub mod pallet {
 			let real_balance = real_balance.saturating_add(saved_vstoken);
 
 			<TokenSheet<T>>::insert(who.clone(), token);
-			<RealBalance<T>>::put(real_balance);
-			<RealSupply<T>>::put(real_supply);
+			<RealBalanceOfVSToken<T>>::put(real_balance);
+			<RealSupplyOfToken<T>>::put(real_supply);
 
 			// Emit an event.
 			Self::deposit_event(Event::VsTokenToToken(saved_vstoken, token, who.clone()));
@@ -164,10 +165,10 @@ pub mod pallet {
 		pub fn token_buy_vstoken(origin: OriginFor<T>, token: u128) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let saved_token = token;
-			let base_supply = <BaseSupply<T>>::get().unwrap();
-			let base_balance = <BaseBalance<T>>::get().unwrap();
-			let real_supply = <RealSupply<T>>::get().unwrap();
-			let real_balance = <RealBalance<T>>::get().unwrap();
+			let base_supply = <BaseSupplyOfToken<T>>::get().unwrap();
+			let base_balance = <BaseBalanceOfVSToken<T>>::get().unwrap();
+			let real_supply = <RealSupplyOfToken<T>>::get().unwrap();
+			let real_balance = <RealBalanceOfVSToken<T>>::get().unwrap();
 			let virtual_supply = base_supply.saturating_add(real_supply);
 			let virtual_balance = base_balance.saturating_add(real_balance);
 
@@ -187,8 +188,8 @@ pub mod pallet {
 			let real_balance = real_balance.saturating_sub(vstoken);
 
 			<TokenSheet<T>>::insert(who.clone(), <TokenSheet<T>>::get(who.clone()).unwrap().saturating_sub(saved_token));
-			<RealBalance<T>>::put(real_balance);
-			<RealSupply<T>>::put(real_supply);
+			<RealBalanceOfVSToken<T>>::put(real_balance);
+			<RealSupplyOfToken<T>>::put(real_supply);
 
 			// Emit an event.
 			Self::deposit_event(Event::TokenToVsToken(saved_token, vstoken, who.clone()));
